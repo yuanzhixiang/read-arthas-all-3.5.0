@@ -33,7 +33,10 @@ public class SocketUtils {
 
     public static long findTcpListenProcess(int port) {
         try {
+
+            // 如果为 windows 系统则走下面的判断方式
             if (OSUtils.isWindows()) {
+                // 通过命令找出所有监听的端口，然后遍历看看我们的端口是否在其中
                 String[] command = { "netstat", "-ano", "-p", "TCP" };
                 List<String> lines = ExecutingCommand.runNative(command);
                 for (String line : lines) {
@@ -49,7 +52,9 @@ public class SocketUtils {
                 }
             }
 
+            // 如果 Linux or Mac 系统则走下面的判断方式
             if (OSUtils.isLinux() || OSUtils.isMac()) {
+                // 通过命令直接找出该端口是否被使用
                 String pid = ExecutingCommand.getFirstAnswer("lsof -t -s TCP:LISTEN -i TCP:" + port);
                 if (!pid.trim().isEmpty()) {
                     return Long.parseLong(pid);

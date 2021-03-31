@@ -26,11 +26,10 @@ import com.taobao.arthas.common.JavaVersionUtils;
 import com.taobao.arthas.common.PidUtils;
 
 /**
- *
  * @author hengyunabc 2018-11-06
- *
  */
 public class ProcessUtils {
+
     private static String FOUND_JAVA_HOME = null;
 
     //status code from com.taobao.arthas.client.TelnetConsole
@@ -53,8 +52,9 @@ public class ProcessUtils {
 
     @SuppressWarnings("resource")
     public static long select(boolean v, long telnetPortPid, String select) throws InputMismatchException {
+        // 通过 jps 找出当前系统中的 Java 进程，map key 为 pid，value 为提示信息
         Map<Long, String> processMap = listProcessByJps(v);
-        // Put the port that is already listening at the first
+        // 如果采用 telnet 的方式连接则直接保存 telnetPortPid 的进程 id
         if (telnetPortPid > 0 && processMap.containsKey(telnetPortPid)) {
             String telnetPortProcess = processMap.get(telnetPortPid);
             processMap.remove(telnetPortPid);
@@ -69,23 +69,25 @@ public class ProcessUtils {
             return -1;
         }
 
-		// select target process by the '--select' option when match only one process
-		if (select != null && !select.trim().isEmpty()) {
-			int matchedSelectCount = 0;
-			Long matchedPid = null;
-			for (Entry<Long, String> entry : processMap.entrySet()) {
-				if (entry.getValue().contains(select)) {
-					matchedSelectCount++;
-					matchedPid = entry.getKey();
-				}
-			}
-			if (matchedSelectCount == 1) {
-				return matchedPid;
-			}
-		}
+        // select target process by the '--select' option when match only one process
+        // 如果在 '--select' 选项中指定了某个启动类则直接使用该启动类的 pid
+        if (select != null && !select.trim().isEmpty()) {
+            int matchedSelectCount = 0;
+            Long matchedPid = null;
+            for (Entry<Long, String> entry : processMap.entrySet()) {
+                if (entry.getValue().contains(select)) {
+                    matchedSelectCount++;
+                    matchedPid = entry.getKey();
+                }
+            }
+            if (matchedSelectCount == 1) {
+                return matchedPid;
+            }
+        }
 
         AnsiLog.info("Found existing java process, please choose one and input the serial number of the process, eg : 1. Then hit ENTER.");
         // print list
+        // 打印进程信息列表
         int count = 1;
         for (String process : processMap.values()) {
             if (count == 1) {
@@ -96,19 +98,24 @@ public class ProcessUtils {
             count++;
         }
 
+        // 读取用户选中的进程编号
         // read choice
+
+        // 如果用户输入的进程编号为空，则使用第一个进程
         String line = new Scanner(System.in).nextLine();
         if (line.trim().isEmpty()) {
             // get the first process id
             return processMap.keySet().iterator().next();
         }
 
+        // 将字符串转为数字
         int choice = new Scanner(line).nextInt();
 
         if (choice <= 0 || choice > processMap.size()) {
             return -1;
         }
 
+        // 找出用户选中的 pid
         Iterator<Long> idIter = processMap.keySet().iterator();
         for (int i = 1; i <= choice; ++i) {
             if (i == choice) {
@@ -133,9 +140,9 @@ public class ProcessUtils {
 
         String[] command = null;
         if (v) {
-            command = new String[] { jps, "-v", "-l" };
+            command = new String[]{jps, "-v", "-l"};
         } else {
-            command = new String[] { jps, "-l" };
+            command = new String[]{jps, "-l"};
         }
 
         List<String> lines = ExecutingCommand.runNative(command);
@@ -220,7 +227,7 @@ public class ProcessUtils {
                 }
 
                 throw new IllegalArgumentException("Can not find tools.jar under java home: " + javaHome
-                                + ", please try to start arthas-boot with full path java. Such as /opt/jdk/bin/java -jar arthas-boot.jar");
+                    + ", please try to start arthas-boot with full path java. Such as /opt/jdk/bin/java -jar arthas-boot.jar");
             }
         } else {
             FOUND_JAVA_HOME = javaHome;
@@ -236,7 +243,7 @@ public class ProcessUtils {
         File javaPath = findJava(javaHome);
         if (javaPath == null) {
             throw new IllegalArgumentException(
-                            "Can not find java/java.exe executable file under java home: " + javaHome);
+                "Can not find java/java.exe executable file under java home: " + javaHome);
         }
 
         File toolsJar = findToolsJar(javaHome);
@@ -247,6 +254,7 @@ public class ProcessUtils {
             }
         }
 
+        // 在启动参数前增加用来启动的 java 程序路径
         List<String> command = new ArrayList<String>();
         command.add(javaPath.getAbsolutePath());
 
@@ -265,6 +273,7 @@ public class ProcessUtils {
         // -core "${arthas_lib_dir}/arthas-core.jar" \
         // -agent "${arthas_lib_dir}/arthas-agent.jar"
 
+        // 使用 ProcessBuilder 启动进程
         ProcessBuilder pb = new ProcessBuilder(command);
         try {
             final Process proc = pb.start();
@@ -308,11 +317,12 @@ public class ProcessUtils {
         }
     }
 
-    public static int startArthasClient(String arthasHomeDir, List<String> telnetArgs, OutputStream out) throws Throwable {
+    public static int startArthasClient(String arthasHomeDir, List<String> telnetArgs, OutputStream out)
+        throws Throwable {
         // start java telnet client
         // find arthas-client.jar
         URLClassLoader classLoader = new URLClassLoader(
-                new URL[]{new File(arthasHomeDir, "arthas-client.jar").toURI().toURL()});
+            new URL[]{new File(arthasHomeDir, "arthas-client.jar").toURI().toURL()});
         Class<?> telnetConsoleClas = classLoader.loadClass("com.taobao.arthas.client.TelnetConsole");
         Method processMethod = telnetConsoleClas.getMethod("process", String[].class);
 
@@ -355,7 +365,7 @@ public class ProcessUtils {
     }
 
     private static File findJava(String javaHome) {
-        String[] paths = { "bin/java", "bin/java.exe", "../bin/java", "../bin/java.exe" };
+        String[] paths = {"bin/java", "bin/java.exe", "../bin/java", "../bin/java.exe"};
 
         List<File> javaList = new ArrayList<File>();
         for (String path : paths) {
@@ -413,7 +423,7 @@ public class ProcessUtils {
     private static File findJps() {
         // Try to find jps under java.home and System env JAVA_HOME
         String javaHome = System.getProperty("java.home");
-        String[] paths = { "bin/jps", "bin/jps.exe", "../bin/jps", "../bin/jps.exe" };
+        String[] paths = {"bin/jps", "bin/jps.exe", "../bin/jps", "../bin/jps.exe"};
 
         List<File> jpsList = new ArrayList<File>();
         for (String path : paths) {
