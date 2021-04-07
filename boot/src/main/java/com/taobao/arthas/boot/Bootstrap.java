@@ -22,6 +22,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
+import com.taobao.arthas.client.TelnetConsole;
 import com.taobao.arthas.common.AnsiLog;
 import com.taobao.arthas.common.JavaVersionUtils;
 import com.taobao.arthas.common.SocketUtils;
@@ -293,9 +294,7 @@ public class Bootstrap {
         this.select = select;
     }
 
-    public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException,
-        ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException,
-        IllegalArgumentException, InvocationTargetException {
+    public static void main(String[] args) throws Exception {
 
         // 打印 arthas-boot 版本号
         Package bootstrapPackage = Bootstrap.class.getPackage();
@@ -620,7 +619,8 @@ public class Bootstrap {
         // fix https://github.com/alibaba/arthas/issues/833
         Thread.currentThread().setContextClassLoader(classLoader);
         // 调用 com.taobao.arthas.client.TelnetConsole 的 main 方法
-        mainMethod.invoke(null, new Object[]{telnetArgs.toArray(new String[0])});
+        TelnetConsole.main(telnetArgs.toArray(new String[0]));
+//        mainMethod.invoke(null, new Object[]{telnetArgs.toArray(new String[0])});
     }
 
     private static void checkTelnetPortPid(Bootstrap bootstrap, long telnetPortPid, long targetPid) {

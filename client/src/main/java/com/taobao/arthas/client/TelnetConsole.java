@@ -172,6 +172,12 @@ public class TelnetConsole {
             System.exit(status);
         } catch (Throwable e) {
             e.printStackTrace();
+
+            // 打印提示信息，提示信息为下面的格式
+            // <com.taobao.arthas.client.TelnetConsole @Summary 中的内容>
+            // <com.taobao.arthas.client.TelnetConsole @Description 中的内容>
+            // Options and Arguments:
+            //   <com.taobao.arthas.client.TelnetConsole 中所有 @Option 和 @Description 中的内容>
             CLI cli = CLIConfigurator.define(TelnetConsole.class);
             System.out.println(usage(cli));
             System.exit(STATUS_ERROR);
@@ -236,9 +242,12 @@ public class TelnetConsole {
             }
         }
 
+        // 创建 Jline 工具
         final ConsoleReader consoleReader = new ConsoleReader(System.in, System.out);
         consoleReader.setHandleUserInterrupt(true);
         Terminal terminal = consoleReader.getTerminal();
+
+        // 以下便开始对命令行进行配置
 
         // support catch ctrl+c event
         terminal.disableInterruptCharacter();
@@ -313,10 +322,14 @@ public class TelnetConsole {
                 throw e;
             }
 
+            // 如果需要执行的命令为空，则直接将本地命令行输入输出和远程输入输出连起来
             if (cmds.isEmpty()) {
                 IOUtil.readWrite(telnet.getInputStream(), telnet.getOutputStream(), consoleReader.getInput(),
                         consoleReader.getOutput());
-            } else {
+            }
+
+            // 如果有需要执行的命令则去执行命令，执行完之后直接关闭
+            else {
                 try {
                     return batchModeRun(telnet, cmds, telnetConsole.getExecutionTimeout());
                 } catch (Throwable e) {
