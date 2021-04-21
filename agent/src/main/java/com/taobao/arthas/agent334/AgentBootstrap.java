@@ -88,9 +88,11 @@ public class AgentBootstrap {
     }
 
     private static synchronized void main(String args, final Instrumentation inst) {
-        // 尝试判断arthas是否已在运行，如果是的话，直接就退出
+        // 尝试判断 arthas 是否已在运行，如果是的话，直接就退出
         try {
-            Class.forName("java.arthas.SpyAPI"); // 加载不到会抛异常
+            // 加载不到会抛异常
+            Class.forName("java.arthas.SpyAPI");
+            // 加载到的话则判断 SpyAPI 是否被初始化
             if (SpyAPI.isInited()) {
                 ps.println("Arthas server already stared, skip attach.");
                 ps.flush();
@@ -101,7 +103,7 @@ public class AgentBootstrap {
         }
         try {
             ps.println("Arthas server agent start...");
-            // 传递的args参数分两个部分:arthasCoreJar路径和agentArgs, 分别是Agent的JAR包路径和期望传递到服务端的参数
+            // 传递的 args 参数分两个部分: arthasCoreJar 路径和 agentArgs, 分别是 Agent 的 JAR 包路径和期望传递到服务端的参数
             if (args == null) {
                 args = "";
             }
@@ -151,6 +153,7 @@ public class AgentBootstrap {
                     try {
                         bind(inst, agentLoader, agentArgs);
                     } catch (Throwable throwable) {
+                        throwable.printStackTrace();
                         throwable.printStackTrace(ps);
                     }
                 }

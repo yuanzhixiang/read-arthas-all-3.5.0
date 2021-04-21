@@ -12,7 +12,9 @@ import com.taobao.middleware.cli.CommandLine;
 import com.taobao.middleware.cli.Option;
 import com.taobao.middleware.cli.TypedOption;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.Properties;
@@ -83,9 +85,18 @@ public class Arthas {
     }
 
     private void attachAgent(Configure configure) throws Exception {
+        // 找到项目根目录
+        String homePath = Arthas.class.getClassLoader().getResource(".").toString().substring(5);
+        homePath = homePath.substring(0, homePath.length() - 20);
+        // 换成我们自己打的包
+        configure.setArthasAgent(homePath + "agent" + File.separator + "target" + File.separator + "arthas-agent-jar-with-dependencies.jar");
+        configure.setArthasCore(homePath +"core" + File.separator + "target" + File.separator + "arthas-core-shade.jar");
+
+        // 查找目标进程的虚拟机描述符
         VirtualMachineDescriptor virtualMachineDescriptor = null;
         for (VirtualMachineDescriptor descriptor : VirtualMachine.list()) {
             String pid = descriptor.id();
+            // 判断是否是目标进程的虚拟机描述符
             if (pid.equals(Long.toString(configure.getJavaPid()))) {
                 virtualMachineDescriptor = descriptor;
                 break;
@@ -93,9 +104,12 @@ public class Arthas {
         }
         VirtualMachine virtualMachine = null;
         try {
-            if (null == virtualMachineDescriptor) { // 使用 attach(String pid) 这种方式
+            // 如果没有虚拟机描述符，则直接使用 pid 进行 attach
+            if (null == virtualMachineDescriptor) {
                 virtualMachine = VirtualMachine.attach("" + configure.getJavaPid());
-            } else {
+            }
+            // 如果有虚拟机描述符，则使用虚拟机描述符进行 attach
+            else {
                 virtualMachine = VirtualMachine.attach(virtualMachineDescriptor);
             }
 
@@ -115,9 +129,14 @@ public class Arthas {
             //convert jar path to unicode string
             configure.setArthasAgent(encodeArg(arthasAgentPath));
             configure.setArthasCore(encodeArg(configure.getArthasCore()));
-            virtualMachine.loadAgent(arthasAgentPath,
-                    configure.getArthasCore() + ";" + configure.toString());
+
+            // 通过 virtualMachine 来 load agent 的包，arthasAgentPath 为包的路径
+            // configure.getArthasCore() + ";" + configure.toString() 是作为 agent 的参数传进去的
+            // 备注：需要注意，这里调用 loadAgent 执行 agent，其执行逻辑是串行的，会等到 agent 的代码执行完了才会出来
+            virtualMachine.loadAgent(arthasAgentPath, configure.getArthasCore() + ";" + configure.toString());
         } finally {
+            // 撤销 attach 的效果，这是由于当 arthasCore 启动完之后，其内部单独开了一个线程监听请求
+            // 所以这里可以直接 detach
             if (null != virtualMachine) {
                 virtualMachine.detach();
             }

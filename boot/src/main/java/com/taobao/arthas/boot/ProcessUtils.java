@@ -24,6 +24,7 @@ import com.taobao.arthas.common.ExecutingCommand;
 import com.taobao.arthas.common.IOUtils;
 import com.taobao.arthas.common.JavaVersionUtils;
 import com.taobao.arthas.common.PidUtils;
+import com.taobao.arthas.core.Arthas;
 
 /**
  * @author hengyunabc 2018-11-06
@@ -274,47 +275,48 @@ public class ProcessUtils {
         // -agent "${arthas_lib_dir}/arthas-agent.jar"
 
         // 使用 ProcessBuilder 启动进程
-        ProcessBuilder pb = new ProcessBuilder(command);
-        try {
-            final Process proc = pb.start();
-            Thread redirectStdout = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    InputStream inputStream = proc.getInputStream();
-                    try {
-                        IOUtils.copy(inputStream, System.out);
-                    } catch (IOException e) {
-                        IOUtils.close(inputStream);
-                    }
-
-                }
-            });
-
-            Thread redirectStderr = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    InputStream inputStream = proc.getErrorStream();
-                    try {
-                        IOUtils.copy(inputStream, System.err);
-                    } catch (IOException e) {
-                        IOUtils.close(inputStream);
-                    }
-
-                }
-            });
-            redirectStdout.start();
-            redirectStderr.start();
-            redirectStdout.join();
-            redirectStderr.join();
-
-            int exitValue = proc.exitValue();
-            if (exitValue != 0) {
-                AnsiLog.error("attach fail, targetPid: " + targetPid);
-                System.exit(1);
-            }
-        } catch (Throwable e) {
-            // ignore
-        }
+        Arthas.main(command.toArray(new String[0]));
+//        ProcessBuilder pb = new ProcessBuilder(command);
+//        try {
+//            final Process proc = pb.start();
+//            Thread redirectStdout = new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    InputStream inputStream = proc.getInputStream();
+//                    try {
+//                        IOUtils.copy(inputStream, System.out);
+//                    } catch (IOException e) {
+//                        IOUtils.close(inputStream);
+//                    }
+//
+//                }
+//            });
+//
+//            Thread redirectStderr = new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    InputStream inputStream = proc.getErrorStream();
+//                    try {
+//                        IOUtils.copy(inputStream, System.err);
+//                    } catch (IOException e) {
+//                        IOUtils.close(inputStream);
+//                    }
+//
+//                }
+//            });
+//            redirectStdout.start();
+//            redirectStderr.start();
+//            redirectStdout.join();
+//            redirectStderr.join();
+//
+//            int exitValue = proc.exitValue();
+//            if (exitValue != 0) {
+//                AnsiLog.error("attach fail, targetPid: " + targetPid);
+//                System.exit(1);
+//            }
+//        } catch (Throwable e) {
+//            // ignore
+//        }
     }
 
     public static int startArthasClient(String arthasHomeDir, List<String> telnetArgs, OutputStream out)

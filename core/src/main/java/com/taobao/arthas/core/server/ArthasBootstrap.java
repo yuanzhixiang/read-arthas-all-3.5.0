@@ -39,6 +39,7 @@ import com.taobao.arthas.common.AnsiLog;
 import com.taobao.arthas.common.ArthasConstants;
 import com.taobao.arthas.common.PidUtils;
 import com.taobao.arthas.common.SocketUtils;
+import com.taobao.arthas.core.Arthas;
 import com.taobao.arthas.core.advisor.Enhancer;
 import com.taobao.arthas.core.advisor.TransformerManager;
 import com.taobao.arthas.core.command.BuiltinCommandPack;
@@ -191,7 +192,7 @@ public class ArthasBootstrap {
     private void initSpy() throws Throwable {
         // TODO init SpyImpl ?
 
-        // 将Spy添加到BootstrapClassLoader
+        // 将 Spy 添加到 BootstrapClassLoader
         ClassLoader parent = ClassLoader.getSystemClassLoader().getParent();
         Class<?> spyClass = null;
         if (parent != null) {
@@ -204,8 +205,9 @@ public class ArthasBootstrap {
         if (spyClass == null) {
             CodeSource codeSource = ArthasBootstrap.class.getProtectionDomain().getCodeSource();
             if (codeSource != null) {
-                File arthasCoreJarFile = new File(codeSource.getLocation().toURI().getSchemeSpecificPart());
-                File spyJarFile = new File(arthasCoreJarFile.getParentFile(), ARTHAS_SPY_JAR);
+                String homePath = codeSource.getLocation().toURI().getSchemeSpecificPart();
+                homePath = homePath.substring(0, homePath.length() - 33);
+                File spyJarFile = new File(homePath + File.separator + "spy" + File.separator + "target" + File.separator + ARTHAS_SPY_JAR);
                 instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(spyJarFile));
             } else {
                 throw new IllegalStateException("can not find " + ARTHAS_SPY_JAR);
@@ -310,11 +312,7 @@ public class ArthasBootstrap {
             configName = arthasEnvironment.resolvePlaceholders(CONFIG_NAME_PROPERTY);
         }
 
-        if (location != null) {
-            if (!location.endsWith(".properties")) {
-                location = new File(location, configName + ".properties").getAbsolutePath();
-            }
-        }
+        location = location.substring(0, location.length() - 6) + "src/main/java/arthas.properties".replaceAll("/", File.separator);
 
         if (new File(location).exists()) {
             Properties properties = FileUtils.readProperties(location);
